@@ -1,17 +1,24 @@
 <?php
-
+require_once('../config/config.php');
 class Record{
 	
 	
-	private $dateTime;
+	private $now;
+
 	private $db_connection = null;
+	public function __construct(){
+		$now = date("Y-m-d");
+	}
 
 
-	public function addRecord($rate){
+	public function addRecord($rate, $date){
 		if ($this->databaseConnection ()) {
-			$query = $this->db_connection->prepare ( 'insert into happyornot (`rate`) values (:rate)' );
-			
+			$query = $this->db_connection->prepare ( 'insert into happyornot (`rate`,`timestamp`) values (:rate, :timestamp)' );
+			if(isset($data)){
+				$date= date("Y-m-d");
+			}
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
+			$query->bindValue ( ':rate', $this->dateToDB($date), PDO::PARAM_STR );
 			$success=$query->execute ();
 		}
 	}
@@ -19,8 +26,8 @@ class Record{
 			if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 'select count(*) from happyornot where `rate` = :rate and `timestamp`>= :fromdate  and `timestamp`<= :to' );
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
-			$query->bindValue ( ':from', $this->dateToDB($fromdate), PDO::PARAM_String );
-			$query->bindValue ( ':to', $this->dateToDB($to), PDO::PARAM_String );
+			$query->bindValue ( ':from', $this->dateToDB($fromdate), PDO::PARAM_STR );
+			$query->bindValue ( ':to', $this->dateToDB($to), PDO::PARAM_STR );
 			$success=$query->execute ();
 
 			$query->execute ();
@@ -37,18 +44,18 @@ class Record{
 		}	
 
 	}
-	public function getHappyRecords($from, $to = now(); ){
-		return $this->countingData(4, $from, $to)
+	public function getHappyRecords($from, $to  ){
+		return $this->countingData(4, $from, $to);
 
 	}
-	public function getGoodRecords($from, $to = now(); ){
-		return $this->countingData(3, $from, $to)		
+	public function getGoodRecords($from, $to ){
+		return $this->countingData(3, $from, $to);		
 	}
-	public function getBadRecords($from, $to = now(); ){
-		return $this->countingData(2, $from, $to)			
+	public function getBadRecords($from, $to  ){
+		return $this->countingData(2, $from, $to)	;		
 	}
-	public function getAwfulRecords($from, $to = now(); ){
-		return $this->countingData(1, $from, $to)		
+	public function getAwfulRecords($from, $to ){
+		return $this->countingData(1, $from, $to);		
 	}
 
 	private function databaseConnection() {
