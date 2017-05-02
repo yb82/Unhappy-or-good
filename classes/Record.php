@@ -1,7 +1,10 @@
 <?php
 
 require_once('../config/config.php');
-
+require_once('classes/RecordSet.php');
+define ("TODAY",1);
+define ("RANGE",2);
+define ("ALL",3);
 class Record{
 	
 	
@@ -9,7 +12,8 @@ class Record{
 
 	private $db_connection = null;
 	public function __construct(){
-		$now = date("Y-m-d");
+		$now = date("d-m-Y");
+		$now = $this->dbToDate($now);
 	}
 
 
@@ -77,49 +81,152 @@ class Record{
 		}	
 
 	}
+	public  function createTodaysandAllData($tag)
+	{
+		$output=array();
+		$happyDataSet;
+		$goodDataset;
+		$sosoDataset;
+		$badDataset;
+		switch ($tag) {
+			case 'TODAY':
+				$happyDataSet = $this->getHappyRecordsToday();
+				$goodDataset = $this->getGoodRecordsToday();
+				$sosoDataset = $this->getSosoRecordsToday()
+				$badDataset = $this->getBadRecordsToday();
+				break;
+			case 'ALL':
+				$happyDataSet = $this->getHappyRecordsAll();
+				$goodDataset = $this->getGoodRecordsAll();
+				$sosoDataset = $this->getSosoRecordsAll()
+				$badDataset = $this->getBadRecordsAll();
+				break;
+			
+		}
 
-	public function getHappyRecords($from, $to  ){
+		foreach ($happyDataSet as $value) {
+			$dateset = new RecordSet();
+			$keyValue =$value[0].'/'.$value[1]
+			$dataset->yearAndMonth = $keyValue;
+			$dataset->happy = $value[2];
+			$output[] = $dataset;
+			# code...
+		}
+		foreach ($goodDataset as $goodDateRecord) {
+			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($output as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $goodDateRecord[0){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->good = $goodDateRecord[2];	
+				break;	
+			} else{
+				$dateset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->good = $goodDateRecord[2];
+				$output[] = $dataset;
+			}
+						
+		}
+
+		foreach ($sosoDataset as $sosoDateRecord) {
+			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($output as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $sosoDateRecord[0){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->soso = $sosoDateRecord[2];	
+				break;	
+			} else{
+				$dateset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->soso = $sosoDateRecord[2];
+				$output[] = $dataset;
+			}
+						
+		}
+
+		foreach ($badDataset as $badDateRecord) {
+			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($output as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $badDateRecord[0){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->bad = $badDateRecord[2];	
+				break;	
+			} else{
+				$dateset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->bad = $badDateRecord[2];
+				$output[] = $dataset;
+			}
+						
+		}
+
+
+
+		return $this->generateData($output);
+		
+	}
+
+
+	private function getHappyRecords($from, $to  ){
 		return $this->countingData(4, $from, $to);
 
 	}
-	public function getHappyRecordsAll( ){
+	private function getHappyRecordsAll( ){
 		return $this->countingDataall(4);
 
 	}
-	public function getHappyRecordsToday( ){
-		return $this->countingData(4);
+	private function getHappyRecordsToday( ){
+		return $this->countingData(4,$this->now,$this->now);
 
 	}
 
-	public function getGoodRecords($from, $to  ){
+	private function getGoodRecords($from, $to  ){
 		return $this->countingData(3, $from, $to);		
 	}
-	public function getGoodRecordsAll(){
+	private function getGoodRecordsAll(){
 		return $this->countingDataall(3);		
 	}
-	public function getGoodRecordsToday(){
-		return $this->countingDataall(3);		
+	private function getGoodRecordsToday(){
+		return $this->countingDataall(3,$this->now,$this->now);		
 	}
 	
-	public function getBadRecords($from, $to  ){
+	private function getSosoRecords($from, $to  ){
 		return $this->countingData(2, $from, $to);			
 	}
-	public function getBadRecordsAll(){
+	private function getSosoRecordsAll(){
 		return $this->countingDataall(2);			
 	}
-public function getBadRecordsToday(){
-		return $this->countingDataall(2);			
+	private function getSosoRecordsToday(){
+		return $this->countingDataall(2,$this->now,$this->now);			
 	}
 
-	public function getAwfulRecords($from, $to  ){
+	private function getBadRecords($from, $to  ){
 		return $this->countingData(1, $from, $to);		
 	}
 
-	public function getAwfulRecordsAll(){
+	private function getBadRecordsAll(){
 		return $this->countingDataall(1);		
 	}
-	public function getAwfulRecordsToday(){
-		return $this->countingDataall(2);			
+	private function getBadRecordsToday(){
+		return $this->countingDataall(2,$this->now,$this->now);			
 	}
 
 	private function databaseConnection() {
@@ -148,8 +255,11 @@ public function getBadRecordsToday(){
 		$date = str_replace ( '-', '/', $date );
 		return $date;
 	}
-	public function generateData($months, $happy, $good,$soso,$angry)
+
+	public function generateData($dataSet)
 	{
+
+
 		$output= "Highcharts.chart('container', {
     chart: {
         type: 'column'
@@ -159,13 +269,13 @@ public function getBadRecordsToday(){
     },
     xAxis: {
         categories: [";
-        $count = $months.count();
+        $count = count($dataSet);
         for ($i=0 ; $i<$count ; $i++) {
         	$temp ="";
         	if ($i!= $count-1) {
         		$temp = "\",\"";
         	} 
-        	$output.=$month[$i].$temp;
+        	$output.=$dataSet[$i]->yearAndMonth.$temp;
         }
                
         $output.=
@@ -189,7 +299,15 @@ public function getBadRecordsToday(){
     series: [
     {   name: 'Happy',
         data: [";
-        $output.= "";#todo: add counter of happiness data;
+        
+        for ($i=0; $i < $count ; $i++) { 
+        	$temp ="";
+        	if ($i!= $count-1) {
+        		$temp = "\",\"";
+        	} 
+        	$output.=$happy[$i].$temp;	
+        }
+      
         
 
         $output.=
@@ -198,22 +316,41 @@ public function getBadRecordsToday(){
     {
         name: 'Good',
         data: [";
-        $output.= ""; #todo: add counter of good data;
-		
+         for ($i=0; $i < $count ; $i++) { 
+        	$temp ="";
+        	if ($i!= $count-1) {
+        		$temp = "\",\"";
+        	} 
+        	$output.=$good[$i].$temp;	
+        }
+      
 		$output.=
         "]
     },
     {
         name: 'Soso',
         data: [";
-        $output.= ""; #todo: add counter of good data;
+     	for ($i=0; $i < $count ; $i++) { 
+        	$temp ="";
+        	if ($i!= $count-1) {
+        		$temp = "\",\"";
+        	} 
+        	$output.=$soso[$i].$temp;	
+        }
+      
 		$output.=
         "]
     },  
     {
         name: 'Bad',
         data: [";
-        $output.= "";#todo: add counter of good data;
+       for ($i=0; $i < $count ; $i++) { 
+        	$temp ="";
+        	if ($i!= $count-1) {
+        		$temp = "\",\"";
+        	} 
+        	$output.=$bad[$i].$temp;	
+        }
         $output.=
         "
 
