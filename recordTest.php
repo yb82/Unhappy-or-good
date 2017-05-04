@@ -18,7 +18,7 @@ echo "hello";
 	for($i=0 ; $i <30 ; $i++){
 		$record->addRecord(1);
 	}*/
-	for($i=0 ; $i <40 ; $i++){
+	/*for($i=0 ; $i <40 ; $i++){
 		echo "hello";
 		$record->addRecordDate(1,"29/03/2017");
 		$record->addRecordDate(2,"29/03/2017");
@@ -30,5 +30,11 @@ echo "hello";
 		$record->addRecordDate(3,"29/11/2017");
 		$record->addRecordDate(4,"29/11/2017");
 		$record->addRecordDate(2,"29/11/2017");
-	}
+	}*/
+	echo $record->createTodaysandAllData(1);
+
+
+	//echo $record->createRangeData("29/11/2015", "29/05/2017");
+	//$happyDataSet = $record->getHappyRecords("29/11/2015", "29/05/2017");
+	//print_r($happyDataSet);
 ?>

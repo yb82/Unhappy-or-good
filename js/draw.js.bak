@@ -41,15 +41,15 @@ $('#refresh').click(function(e){
     todate : to
     };
       var data = getRangeData(date);
-      Highcharts.chart('container',{data}
+      highcharts.charg('container',{data}
 
       );
    } else if (selectedOption =="current") {
     var data = getAllData();
-      Highcharts.chart('container',{data}  );
+      highcharts.charg('container',{data}  );
    } else if (selectedOption =="today") {
       var data = getTodayData();
-      Highcharts.chart('container',{data}  );
+      highcharts.charg('container',{data}  );
    }
    
 
@@ -58,7 +58,7 @@ $('#refresh').click(function(e){
 
  });
 function getRangeData(fromto){
-    $.post( "./update.php", { 'date': date}) .done(function( data ) {
+    $.post( "./update.php", { date: fromto}) .done(function( data ) {
         if(data=="[]"){
           alert( "Error" );
         } 
@@ -77,7 +77,7 @@ function getAllData(){
         }
       });
 }
-function getTodayData(){
+function getToday(){
     $.post( "./update.php", { today: 1 }) .done(function( data ) {
         if(data=="[]"){
           alert( "Error" );

@@ -9,6 +9,7 @@ class Record{
 	
 	
 	private $now;
+	private $outputData;
 
 	private $db_connection = null;
 	public function __construct(){
@@ -18,7 +19,7 @@ class Record{
 
 
 	public function addRecord($rate){
-		print_r($this->now);
+		
 		if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 'insert into happyornot (`rate`) values (:rate)' );
 			
@@ -30,7 +31,7 @@ class Record{
 		}
 	}
 	public function addRecordDate($rate,$date){
-		print_r($this->now);
+		
 		if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 'insert into happyornot (`rate`,`timestamp`) values (:rate,:timestamp)' );
 			
@@ -43,7 +44,17 @@ class Record{
 	}
 	private function countingData($rate, $from , $to){
 			if ($this->databaseConnection ()) {
-			$query = $this->db_connection->prepare ( 'SELECT YEAR(timestamp), MONTH(timestamp), count(*) from happyornot where WHERE `rate` = :rate AND `timestamp` >= :from  and `timestamp` <= :to group by YEAR(timestamp), MONTH(timestamp)');
+			$query = $this->db_connection->prepare ( 
+				'SELECT YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) , COUNT(*) 
+				FROM happyornot
+				WHERE rate =:rate
+				AND  `timestamp` >=  :from
+				AND  `timestamp` <=  :to
+				GROUP BY YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) 
+				');
+			//echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
+			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
+
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 			$query->bindValue ( ':from', $this->dateToDB( $from)." 00:00:00", PDO::PARAM_STR );
 			$query->bindValue ( ':to', $this->dateToDB($to)." 23:59:59", PDO::PARAM_STR );
@@ -81,6 +92,105 @@ class Record{
 		}	
 
 	}
+	public function createRangeData($from, $to)
+	{
+		$output =array();
+		$happyDataSet;
+		$goodDataset;
+		$sosoDataset;
+		$badDataset;
+		
+			
+		$happyDataSet = $this->getHappyRecords($from,$to);
+		$goodDataset = $this->getGoodRecords($from,$to);
+		$sosoDataset = $this->getSosoRecords($from,$to);
+		$badDataset = $this->getBadRecords($from,$to);
+		/*
+		echo "<br/>happy".$from." ".$to."<br/>" ;
+		print_r($happyDataSet);
+		echo "<br/>";
+*/
+		foreach ($happyDataSet as $value) {
+			$dataset = new RecordSet();
+			//echo $dataset->happy;
+			$keyValue =$value[0].'/'.$value[1];
+			$dataset->yearAndMonth = $keyValue;
+			$dataset->happy = $value[2];
+			$this->outputData[$keyValue] = $dataset;
+			# code...
+		}
+		foreach ($goodDataset as $goodDateRecord) {
+			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($this->outputData as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $goodDateRecord[0]){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->good = $goodDateRecord[2];	
+				break;	
+			} else{
+				$dataset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->good = $goodDateRecord[2];
+				$this->outputData[$tempYearAndMonth] = $dataset;
+			}
+						
+		}
+
+		foreach ($sosoDataset as $sosoDateRecord) {
+			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($this->outputData as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $sosoDateRecord[0]){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->soso = $sosoDateRecord[2];	
+				break;	
+			} else{
+				$dataset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->soso = $sosoDateRecord[2];
+				$this->outputData[$tempYearAndMonth] = $dataset;
+			}
+						
+		}
+
+		foreach ($badDataset as $badDateRecord) {
+			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
+			$i =0; $j=-1;
+			foreach ($this->outputData as  $outputRecord) {
+				if($outputRecord->yearAndMonth == $badDateRecord[0]){
+					$j = $i;
+				}
+				$i++;
+			}
+			
+			if($j!=-1){
+				$output[$j]->bad = $badDateRecord[2];	
+				break;	
+			} else{
+				$dataset = new RecordSet();
+				$dataset->yearAndMonth = $tempYearAndMonth;
+				$dataset->bad = $badDateRecord[2];
+				$this->outputData[$tempYearAndMonth] = $dataset;
+			}
+						
+		}
+
+		
+
+		return $this->generateData();
+	}
+
+
 	public  function createTodaysandAllData($tag)
 	{
 		$output=array();
@@ -92,31 +202,32 @@ class Record{
 			case 'TODAY':
 				$happyDataSet = $this->getHappyRecordsToday();
 				$goodDataset = $this->getGoodRecordsToday();
-				$sosoDataset = $this->getSosoRecordsToday()
+				$sosoDataset = $this->getSosoRecordsToday();
 				$badDataset = $this->getBadRecordsToday();
 				break;
 			case 'ALL':
 				$happyDataSet = $this->getHappyRecordsAll();
 				$goodDataset = $this->getGoodRecordsAll();
-				$sosoDataset = $this->getSosoRecordsAll()
+				$sosoDataset = $this->getSosoRecordsAll();
 				$badDataset = $this->getBadRecordsAll();
 				break;
 			
 		}
 
 		foreach ($happyDataSet as $value) {
-			$dateset = new RecordSet();
-			$keyValue =$value[0].'/'.$value[1]
+			$dataset = new RecordSet();
+			//echo $dataset->happy;
+			$keyValue =$value[0].'/'.$value[1];
 			$dataset->yearAndMonth = $keyValue;
 			$dataset->happy = $value[2];
-			$output[] = $dataset;
+			$output[$keyValue] = $dataset;
 			# code...
 		}
 		foreach ($goodDataset as $goodDateRecord) {
 			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
 			$i =0; $j=-1;
 			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $goodDateRecord[0){
+				if($outputRecord->yearAndMonth == $goodDateRecord[0]){
 					$j = $i;
 				}
 				$i++;
@@ -126,10 +237,10 @@ class Record{
 				$output[$j]->good = $goodDateRecord[2];	
 				break;	
 			} else{
-				$dateset = new RecordSet();
+				$dataset = new RecordSet();
 				$dataset->yearAndMonth = $tempYearAndMonth;
 				$dataset->good = $goodDateRecord[2];
-				$output[] = $dataset;
+				$output[$tempYearAndMonth] = $dataset;
 			}
 						
 		}
@@ -138,7 +249,7 @@ class Record{
 			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
 			$i =0; $j=-1;
 			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $sosoDateRecord[0){
+				if($outputRecord->yearAndMonth == $sosoDateRecord[0]){
 					$j = $i;
 				}
 				$i++;
@@ -148,10 +259,10 @@ class Record{
 				$output[$j]->soso = $sosoDateRecord[2];	
 				break;	
 			} else{
-				$dateset = new RecordSet();
+				$dataset = new RecordSet();
 				$dataset->yearAndMonth = $tempYearAndMonth;
 				$dataset->soso = $sosoDateRecord[2];
-				$output[] = $dataset;
+				$output[$tempYearAndMonth] = $dataset;
 			}
 						
 		}
@@ -160,7 +271,7 @@ class Record{
 			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
 			$i =0; $j=-1;
 			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $badDateRecord[0){
+				if($outputRecord->yearAndMonth == $badDateRecord[0]){
 					$j = $i;
 				}
 				$i++;
@@ -170,10 +281,10 @@ class Record{
 				$output[$j]->bad = $badDateRecord[2];	
 				break;	
 			} else{
-				$dateset = new RecordSet();
+				$dataset = new RecordSet();
 				$dataset->yearAndMonth = $tempYearAndMonth;
 				$dataset->bad = $badDateRecord[2];
-				$output[] = $dataset;
+				$output[$tempYearAndMonth] = $dataset;
 			}
 						
 		}
@@ -185,7 +296,7 @@ class Record{
 	}
 
 
-	private function getHappyRecords($from, $to  ){
+	public function getHappyRecords($from, $to  ){
 		return $this->countingData(4, $from, $to);
 
 	}
@@ -256,7 +367,7 @@ class Record{
 		return $date;
 	}
 
-	public function generateData($dataSet)
+	public function generateData()
 	{
 
 
@@ -269,15 +380,21 @@ class Record{
     },
     xAxis: {
         categories: [";
-        $count = count($dataSet);
-        for ($i=0 ; $i<$count ; $i++) {
-        	$temp ="";
-        	if ($i!= $count-1) {
-        		$temp = "\",\"";
+        $i=0;
+        $count = count($this->outputData);
+        foreach ($this->outputData as $key => $value) {
+        	$temp ="\"";
+        	if ($i< $count-1) {
+        		$temp = "\",";
         	} 
-        	$output.=$dataSet[$i]->yearAndMonth.$temp;
+        	 $output.="\"".$key.$temp;
+        	 $i++;
+        
+        
         }
-               
+        
+        
+    
         $output.=
         "]
     },
@@ -300,15 +417,17 @@ class Record{
     {   name: 'Happy',
         data: [";
         
-        for ($i=0; $i < $count ; $i++) { 
+       $i=0;
+       
+        foreach ($this->outputData as $key => $value) {
         	$temp ="";
-        	if ($i!= $count-1) {
-        		$temp = "\",\"";
+        	if ($i< $count-1) {
+        		$temp = ",";
         	} 
-        	$output.=$happy[$i].$temp;	
-        }
-      
+        	 $output.=$value->happy.$temp;
         
+        $i++;
+        }
 
         $output.=
         "]
@@ -316,13 +435,20 @@ class Record{
     {
         name: 'Good',
         data: [";
-         for ($i=0; $i < $count ; $i++) { 
+        
+          $i=0;
+       
+        foreach ($this->outputData as $key => $value) {
         	$temp ="";
-        	if ($i!= $count-1) {
-        		$temp = "\",\"";
+        	if ($i< $count-1) {
+        		$temp = ",";
         	} 
-        	$output.=$good[$i].$temp;	
+        	 $output.=$value->good.$temp;
+        $i++;
+        
         }
+
+        
       
 		$output.=
         "]
@@ -330,13 +456,20 @@ class Record{
     {
         name: 'Soso',
         data: [";
-     	for ($i=0; $i < $count ; $i++) { 
+         
+     	 $i=0;
+       
+        foreach ($this->outputData as $key => $value) {
         	$temp ="";
-        	if ($i!= $count-1) {
-        		$temp = "\",\"";
+        	if ($i< $count-1) {
+        		$temp = ",";
         	} 
-        	$output.=$soso[$i].$temp;	
+        	 $output.=$value->soso.$temp;
+        $i++;
+        
         }
+
+        
       
 		$output.=
         "]
@@ -344,13 +477,20 @@ class Record{
     {
         name: 'Bad',
         data: [";
-       for ($i=0; $i < $count ; $i++) { 
+         
+        $i=0;
+       
+        foreach ($this->outputData as $key => $value) {
         	$temp ="";
-        	if ($i!= $count-1) {
-        		$temp = "\",\"";
+        	if ($i< $count-1) {
+        		$temp = ",";
         	} 
-        	$output.=$bad[$i].$temp;	
+        	 $output.=$value->bad.$temp;
+        
+        $i++;
         }
+
+        
         $output.=
         "
 
