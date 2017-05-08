@@ -9,8 +9,8 @@ define("ANGRY",1);
 $record = new Record();
 if(isset($_POST["date"])){
 
-	$data = explode(",", $_POST['date']);
-	print_r($data);
+	$data = $_REQUEST['date'];
+	
 	echo $record->createRangeData($data[0],$data[1]);
 
 }
