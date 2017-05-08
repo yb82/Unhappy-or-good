@@ -74,7 +74,7 @@ class Record{
 
 	private function countingDataall($rate){
 			if ($this->databaseConnection ()) {
-			$query = $this->db_connection->prepare ( 'SELECT  YEAR(timestamp), MONTH(timestamp), count( * )FROM `happyornot` WHERE `rate` = :rate AND `timestamp` <= NOW( ) group by YEAR(timestamp), MONTH(timestamp)' );
+			$query = $this->db_connection->prepare ( 'SELECT  YEAR(timestamp), MONTH(timestamp), count( * ) FROM `happyornot` WHERE `rate` = :rate AND `timestamp` <= NOW( ) group by YEAR(timestamp), MONTH(timestamp)' );
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 			$success=$query->execute ();
 
@@ -94,6 +94,7 @@ class Record{
 	}
 	public function createRangeData($from, $to)
 	{
+		//echo $from." from to <br/>".$to;
 		$output =array();
 		$happyDataSet;
 		$goodDataset;
@@ -110,11 +111,14 @@ class Record{
 		print_r($happyDataSet);
 		echo "<br/>";
 */
-		foreach ($happyDataSet as $value) {
+		foreach ($happyDataSet as $key => $value) {
 			$dataset = new RecordSet();
 			//echo $dataset->happy;
-			$keyValue =$value[0].'/'.$value[1];
+
+			$keyValue =$key.'/'.$value[0];
+			//echo "<br/>".$keyValue."<br/>";
 			$dataset->yearAndMonth = $keyValue;
+			//echo "<br/>".$value[2]."<br/>";
 			$dataset->happy = $value[2];
 			$this->outputData[$keyValue] = $dataset;
 			# code...
@@ -193,19 +197,24 @@ class Record{
 
 	public  function createTodaysandAllData($tag)
 	{
+		//echo $tag." tag <br/>";
 		$output=array();
 		$happyDataSet;
 		$goodDataset;
 		$sosoDataset;
 		$badDataset;
+		//echo " <br/>";
+
 		switch ($tag) {
-			case 'TODAY':
+			case TODAY:
+				//echo " today <br/>";
 				$happyDataSet = $this->getHappyRecordsToday();
 				$goodDataset = $this->getGoodRecordsToday();
 				$sosoDataset = $this->getSosoRecordsToday();
 				$badDataset = $this->getBadRecordsToday();
 				break;
-			case 'ALL':
+			case ALL:
+				//echo " all <br/>";
 				$happyDataSet = $this->getHappyRecordsAll();
 				$goodDataset = $this->getGoodRecordsAll();
 				$sosoDataset = $this->getSosoRecordsAll();
@@ -213,16 +222,22 @@ class Record{
 				break;
 			
 		}
-
+		//echo "<br/> happy:";
+		//print_r($happyDataSet)."<br/>";
+		if(count($happyDataSet)){
 		foreach ($happyDataSet as $value) {
 			$dataset = new RecordSet();
 			//echo $dataset->happy;
 			$keyValue =$value[0].'/'.$value[1];
+			//echo $keyValue;
 			$dataset->yearAndMonth = $keyValue;
 			$dataset->happy = $value[2];
 			$output[$keyValue] = $dataset;
+			//print_r($output);
 			# code...
 		}
+		}
+		if(count($goodDataset)){
 		foreach ($goodDataset as $goodDateRecord) {
 			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
 			$i =0; $j=-1;
@@ -244,7 +259,8 @@ class Record{
 			}
 						
 		}
-
+	}
+if(count($sosoDataset)){
 		foreach ($sosoDataset as $sosoDateRecord) {
 			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
 			$i =0; $j=-1;
@@ -266,7 +282,8 @@ class Record{
 			}
 						
 		}
-
+}
+if(count($badDataset)){
 		foreach ($badDataset as $badDateRecord) {
 			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
 			$i =0; $j=-1;
@@ -288,7 +305,7 @@ class Record{
 			}
 						
 		}
-
+}
 
 
 		return $this->generateData($output);
@@ -367,11 +384,17 @@ class Record{
 		return $date;
 	}
 
-	public function generateData()
+	public function generateData($outputData)
 	{
+ 		$count = count($outputData);
+ 		//print_r($outputData);
+ 		//echo $count;
+ 		/*if ($count) {
+ 			# code...
+ 			echo $count;
+ 		}*/
 
-
-		$output= "Highcharts.chart('container', {
+		$output= "
     chart: {
         type: 'column'
     },
@@ -381,8 +404,8 @@ class Record{
     xAxis: {
         categories: [";
         $i=0;
-        $count = count($this->outputData);
-        foreach ($this->outputData as $key => $value) {
+        $count = count($outputData);
+        foreach ($outputData as $key => $value) {
         	$temp ="\"";
         	if ($i< $count-1) {
         		$temp = "\",";
@@ -419,7 +442,7 @@ class Record{
         
        $i=0;
        
-        foreach ($this->outputData as $key => $value) {
+        foreach ($outputData as $key => $value) {
         	$temp ="";
         	if ($i< $count-1) {
         		$temp = ",";
@@ -438,7 +461,7 @@ class Record{
         
           $i=0;
        
-        foreach ($this->outputData as $key => $value) {
+        foreach ($outputData as $key => $value) {
         	$temp ="";
         	if ($i< $count-1) {
         		$temp = ",";
@@ -459,7 +482,7 @@ class Record{
          
      	 $i=0;
        
-        foreach ($this->outputData as $key => $value) {
+        foreach ($outputData as $key => $value) {
         	$temp ="";
         	if ($i< $count-1) {
         		$temp = ",";
@@ -480,7 +503,7 @@ class Record{
          
         $i=0;
        
-        foreach ($this->outputData as $key => $value) {
+        foreach ($outputData as $key => $value) {
         	$temp ="";
         	if ($i< $count-1) {
         		$temp = ",";
