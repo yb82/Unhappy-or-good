@@ -2,9 +2,7 @@
 
 require_once('../config/config.php');
 require_once('classes/RecordSet.php');
-define ("TODAY",1);
-define ("RANGE",2);
-define ("ALL",3);
+
 class Record{
 	
 	
@@ -71,7 +69,32 @@ class Record{
 		}	
 
 	}
+private function countingTodayData($rate){
+			if ($this->databaseConnection ()) {
+			$query = $this->db_connection->prepare ( 
+				'SELECT YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) , COUNT(*) 
+				FROM happyornot
+				WHERE rate =:rate
+				AND  DATE(`timestamp`) = CURDATE()
+				GROUP BY YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) 
+				');
+			//echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
+			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
 
+			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
+		
+			$query->execute ();
+			$results = $query->fetchAll ();
+			
+			//$j = 0;
+			if (count ( $results ) > 0) {
+				
+				return $results;
+			} else return 0 ;
+
+		}	
+
+	}
 	private function countingDataall($rate){
 			if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 'SELECT  YEAR(timestamp), MONTH(timestamp), count( * ) FROM `happyornot` WHERE `rate` = :rate AND `timestamp` <= NOW( ) group by YEAR(timestamp), MONTH(timestamp)' );
@@ -193,9 +216,57 @@ class Record{
 
 		return $this->generateData();
 	}
+	public  function createTodayData(){
+		$happyDataSet = $this->getHappyRecordsToday();
+		$goodDataset = $this->getGoodRecordsToday();
+		$sosoDataset = $this->getSosoRecordsToday();
+		$badDataset = $this->getBadRecordsToday();
+		$output= "
+    chart: {
+        type: 'column'
+    },
+    title: {
+        text: 'Stacked column chart'
+    },
+    xAxis: {
+        categories: [\"Today\"]
+    },
+    yAxis: {
+        min: 0,
+        title: {
+            text: 'Level of Student satisfaction'
+        }
+    },
+    tooltip: {
+        pointFormat: '<span style=\"color:{series.color}\">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>',
+        shared: true
+    },
+    plotOptions: {
+        column: {
+            stacking: 'percent'
+        }
+    },
+    series: [
+    {   name: 'Happy',
+        data: [".$happyDataSet."]
+    }, 
+    {
+        name: 'Good',
+        data: [".	$goodDataset.       "]
+    },
+    {
+        name: 'Soso',
+        data: [".$sosoDataset. "]
+    },  
+    {
+        name: 'Bad',
+        data: [".$badDataset. "]
+    }],";
+		return $output;
+	}
 
 
-	public  function createTodaysandAllData($tag)
+	public  function createAllData()
 	{
 		//echo $tag." tag <br/>";
 		$output=array();
@@ -205,27 +276,17 @@ class Record{
 		$badDataset;
 		//echo " <br/>";
 
-		switch ($tag) {
-			case TODAY:
-				//echo " today <br/>";
-				$happyDataSet = $this->getHappyRecordsToday();
-				$goodDataset = $this->getGoodRecordsToday();
-				$sosoDataset = $this->getSosoRecordsToday();
-				$badDataset = $this->getBadRecordsToday();
-				break;
-			case ALL:
-				//echo " all <br/>";
+		
 				$happyDataSet = $this->getHappyRecordsAll();
 				$goodDataset = $this->getGoodRecordsAll();
 				$sosoDataset = $this->getSosoRecordsAll();
 				$badDataset = $this->getBadRecordsAll();
-				break;
-			
-		}
+		
 		//echo "<br/> happy:";
 		//print_r($happyDataSet)."<br/>";
-		if(count($happyDataSet)){
-		foreach ($happyDataSet as $value) {
+		if(count($happyDataSet) != 0){
+			
+		foreach ($happyDataSet as $key => $value) {
 			$dataset = new RecordSet();
 			//echo $dataset->happy;
 			$keyValue =$value[0].'/'.$value[1];
@@ -322,7 +383,7 @@ if(count($badDataset)){
 
 	}
 	private function getHappyRecordsToday( ){
-		return $this->countingData(4,$this->now,$this->now);
+		return $this->countingTodayData(4);
 
 	}
 
@@ -333,7 +394,7 @@ if(count($badDataset)){
 		return $this->countingDataall(3);		
 	}
 	private function getGoodRecordsToday(){
-		return $this->countingDataall(3,$this->now,$this->now);		
+		return $this->countingTodayData(3);		
 	}
 	
 	private function getSosoRecords($from, $to  ){
@@ -343,7 +404,7 @@ if(count($badDataset)){
 		return $this->countingDataall(2);			
 	}
 	private function getSosoRecordsToday(){
-		return $this->countingDataall(2,$this->now,$this->now);			
+		return $this->countingTodayData(2);			
 	}
 
 	private function getBadRecords($from, $to  ){
@@ -354,7 +415,7 @@ if(count($badDataset)){
 		return $this->countingDataall(1);		
 	}
 	private function getBadRecordsToday(){
-		return $this->countingDataall(2,$this->now,$this->now);			
+		return $this->countingTodayData(1);			
 	}
 
 	private function databaseConnection() {
