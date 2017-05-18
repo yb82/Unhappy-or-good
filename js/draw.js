@@ -1,5 +1,5 @@
 function visitorData (data) {
-   $('#chart1').highcharts({
+   $('#container1').highcharts({
     chart: {
         type: 'column'
     },
@@ -7,7 +7,7 @@ function visitorData (data) {
         text: 'Average Visitors'
     },
     xAxis: {
-        categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        categories: ["Today"]
     },
     yAxis: {
         title: {
@@ -37,13 +37,13 @@ $('#refresh').click(function(e){
       return 0;
     }
     var date = {
-    fromdate : from,
-    todate : to
+    from, to
     };
       var data = getRangeData(date);
-      Highcharts.chart('container',{data}
 
-      );
+
+     
+
    } else if (selectedOption =="current") {
     var data = getAllData();
       Highcharts.chart('container',{data}  );
@@ -58,11 +58,12 @@ $('#refresh').click(function(e){
 
  });
 function getRangeData(fromto){
-    $.post( "./update.php", { 'date': date}) .done(function( data ) {
+    $.post( "./update.php", { 'date': fromto}) .done(function( data ) {
         if(data=="[]"){
           alert( "Error" );
         } 
         else {
+           Highcharts.chart('container1',{data}  );
           return data;
         }
       });
@@ -73,7 +74,9 @@ function getAllData(){
           alert( "Error" );
         } 
         else {
-          return data;
+         // $("#ex").append(data);
+          Highcharts.chart('container1',{data}  );
+          //return data;
         }
       });
 }
@@ -83,7 +86,40 @@ function getTodayData(){
           alert( "Error" );
         } 
         else {
-          return data;
+          
+          $("#ex").append(data);
+          //visitorData(data);
+          var myObj = JSON.parse(data);
+          var seriesData =[];
+          for (var i =0; myObj.length > i ; i++) {
+           seriesData.push({name:myObj[i].name,data:[parseInt(myObj[i].data)]});
+          }
+           
+           var chart ={
+              chart: {type: 'column'},
+          title: {     text: 'Stacked column chart'  },
+          xAxis: {      categories: ["Today"]            },
+            yAxis: {
+              min: 0,
+              title: {
+                text: 'Level of Student satisfaction'
+              }
+            },
+            tooltip: {
+              pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>',
+              shared: true
+            },
+            plotOptions: {
+              column: {
+                stacking: 'percent'
+              }
+            },
+            series:[]
+
+           };
+           chart.series=seriesData;
+           Highcharts.chart('container1',chart);
+          
         }
       });
 }

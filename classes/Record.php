@@ -72,11 +72,11 @@ class Record{
 private function countingTodayData($rate){
 			if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 
-				'SELECT YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) , COUNT(*) 
+				'SELECT COUNT(*) 
 				FROM happyornot
 				WHERE rate =:rate
 				AND  DATE(`timestamp`) = CURDATE()
-				GROUP BY YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) 
+				
 				');
 			//echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
 			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
@@ -89,7 +89,7 @@ private function countingTodayData($rate){
 			//$j = 0;
 			if (count ( $results ) > 0) {
 				
-				return $results;
+				return $results[0][0];
 			} else return 0 ;
 
 		}	
@@ -221,48 +221,15 @@ private function countingTodayData($rate){
 		$goodDataset = $this->getGoodRecordsToday();
 		$sosoDataset = $this->getSosoRecordsToday();
 		$badDataset = $this->getBadRecordsToday();
-		$output= "
-    chart: {
-        type: 'column'
-    },
-    title: {
-        text: 'Stacked column chart'
-    },
-    xAxis: {
-        categories: [\"Today\"]
-    },
-    yAxis: {
-        min: 0,
-        title: {
-            text: 'Level of Student satisfaction'
-        }
-    },
-    tooltip: {
-        pointFormat: '<span style=\"color:{series.color}\">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>',
-        shared: true
-    },
-    plotOptions: {
-        column: {
-            stacking: 'percent'
-        }
-    },
-    series: [
-    {   name: 'Happy',
-        data: [".$happyDataSet."]
-    }, 
-    {
-        name: 'Good',
-        data: [".	$goodDataset.       "]
-    },
-    {
-        name: 'Soso',
-        data: [".$sosoDataset. "]
-    },  
-    {
-        name: 'Bad',
-        data: [".$badDataset. "]
-    }],";
-		return $output;
+		
+		$output= array(); 
+		$output[]= array("name" => "Happy", "data" => array($happyDataSet) );
+		$output[] = array("name" => "Good", "data" => array($goodDataset));
+		$output[] =  array("name" => "Soso", "data" => array($sosoDataset ));
+		$output[] =  array("name" => "Bad", "data" => array($badDataset ));
+		
+
+		return json_encode($output);
 	}
 
 
