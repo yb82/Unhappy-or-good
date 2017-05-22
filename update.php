@@ -1,29 +1,26 @@
 <?php
 require_once ("./classes/Record.php");
 
-define("HAPPY",4);
-define("GOOD",3);
-define("SOSO",2);
-define("ANGRY",1);
-
+error_reporting(0);
 $record = new Record();
 if(isset($_POST["date"])){
 
 	$data = $_REQUEST['date'];
-	
-	echo $record->createRangeData($data[0],$data[1]);
+	//print_r($data);
+	echo $record->createRangeData($data["from"],$data["to"]);
 
 }
 if(isset($_POST["today"])){
 
-	echo $record->createTodaysandAllData(1);
+	echo $record->createTodayData();
 
 }
 if(isset($_POST["all"])){
 
-	echo $record->createTodaysandAllData(3);
+	echo $record->createAllData();
 
 }
+
 if (isset ( $_POST ["emo"] )) {
 	$emo = $_POST["emo"];
 

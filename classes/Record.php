@@ -41,7 +41,7 @@ class Record{
 		}
 	}
 	private function countingData($rate, $from , $to){
-			if ($this->databaseConnection ()) {
+		if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 
 				'SELECT YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) , COUNT(*) 
 				FROM happyornot
@@ -56,7 +56,7 @@ class Record{
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 			$query->bindValue ( ':from', $this->dateToDB( $from)." 00:00:00", PDO::PARAM_STR );
 			$query->bindValue ( ':to', $this->dateToDB($to)." 23:59:59", PDO::PARAM_STR );
-						
+
 			$query->execute ();
 			$results = $query->fetchAll ();
 			
@@ -64,13 +64,13 @@ class Record{
 			if (count ( $results ) > 0) {
 				
 				return $results;
-			} else return 0 ;
+			} else return null ;
 
 		}	
 
 	}
-private function countingTodayData($rate){
-			if ($this->databaseConnection ()) {
+	private function countingTodayData($rate){
+		if ($this->databaseConnection ()) {
 			$query = $this->db_connection->prepare ( 
 				'SELECT COUNT(*) 
 				FROM happyornot
@@ -82,7 +82,7 @@ private function countingTodayData($rate){
 			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
 
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
-		
+
 			$query->execute ();
 			$results = $query->fetchAll ();
 			
@@ -96,8 +96,8 @@ private function countingTodayData($rate){
 
 	}
 	private function countingDataall($rate){
-			if ($this->databaseConnection ()) {
-			$query = $this->db_connection->prepare ( 'SELECT  YEAR(timestamp), MONTH(timestamp), count( * ) FROM `happyornot` WHERE `rate` = :rate AND `timestamp` <= NOW( ) group by YEAR(timestamp), MONTH(timestamp)' );
+		if ($this->databaseConnection ()) {
+			$query = $this->db_connection->prepare ( 'SELECT  count( * ) FROM `happyornot` WHERE `rate` = :rate AND DATE(`timestamp`) <= NOW( ) ' );
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 			$success=$query->execute ();
 
@@ -108,7 +108,7 @@ private function countingTodayData($rate){
 			if (count ( $results ) > 0) {
 				
 				
-					return 	$results;								
+				return 	$results[0][0];								
 				
 			} else return 0 ;
 
@@ -124,97 +124,177 @@ private function countingTodayData($rate){
 		$sosoDataset;
 		$badDataset;
 		
-			
+
 		$happyDataSet = $this->getHappyRecords($from,$to);
 		$goodDataset = $this->getGoodRecords($from,$to);
 		$sosoDataset = $this->getSosoRecords($from,$to);
 		$badDataset = $this->getBadRecords($from,$to);
-		/*
-		echo "<br/>happy".$from." ".$to."<br/>" ;
+		
+		//echo "<br/>happy".$from." ".$to."<br/>" ;
+		//print_r($happyDataSet);
+		echo "<br/>";
+
 		print_r($happyDataSet);
 		echo "<br/>";
-*/
-		foreach ($happyDataSet as $key => $value) {
-			$dataset = new RecordSet();
-			//echo $dataset->happy;
+		print_r($goodDataset);
+		echo "<br/>";
+		print_r($sosoDataset);
+		echo "<br/>";
+		print_r($badDataset);
 
-			$keyValue =$key.'/'.$value[0];
-			//echo "<br/>".$keyValue."<br/>";
-			$dataset->yearAndMonth = $keyValue;
-			//echo "<br/>".$value[2]."<br/>";
-			$dataset->happy = $value[2];
-			$this->outputData[$keyValue] = $dataset;
+		if(!is_null($happyDataSet)){
+
+
+
+
+			foreach ($happyDataSet as $key => $value) {
+				$dataset = new RecordSet();
+				//echo $dataset->happy;
+
+				$keyValue =$value[0].'/'.$value[1];
+				//echo "<br/>".$key."  ".$keyValue."<br/>";
+				$dataset->yearAndMonth = $keyValue;
+				//echo "<br/>".$value[2]."<br/>";
+				$dataset->happy = (int)$value[2];
+				$this->outputData[$keyValue] = $dataset;
 			# code...
+			}
 		}
-		foreach ($goodDataset as $goodDateRecord) {
-			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($this->outputData as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $goodDateRecord[0]){
-					$j = $i;
+		if(!is_null($goodDataset)){
+			foreach ($goodDataset as $goodDateRecord) {
+				$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
+				$i =0; $j=-1;
+				foreach ($this->outputData as  $outputRecord) {
+					if($outputRecord->yearAndMonth == $tempYearAndMonth){
+						$j = $i;
+					}
+					$i++;
 				}
-				$i++;
-			}
-			
-			if($j!=-1){
-				$output[$j]->good = $goodDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->good = $goodDateRecord[2];
-				$this->outputData[$tempYearAndMonth] = $dataset;
-			}
-						
-		}
 
-		foreach ($sosoDataset as $sosoDateRecord) {
-			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($this->outputData as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $sosoDateRecord[0]){
-					$j = $i;
+				if($j!=-1){
+					$output[$j]->good = (int)$goodDateRecord[2];	
+					break;	
+				} else{
+					$dataset = new RecordSet();
+					$dataset->yearAndMonth = $tempYearAndMonth;
+					$dataset->good = (int)$goodDateRecord[2];
+					$this->outputData[$tempYearAndMonth] = $dataset;
 				}
-				$i++;
-			}
-			
-			if($j!=-1){
-				$output[$j]->soso = $sosoDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->soso = $sosoDateRecord[2];
-				$this->outputData[$tempYearAndMonth] = $dataset;
-			}
-						
-		}
 
-		foreach ($badDataset as $badDateRecord) {
-			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($this->outputData as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $badDateRecord[0]){
-					$j = $i;
+			}
+		}
+		if(!is_null($sosoDataset)){
+			foreach ($sosoDataset as $sosoDateRecord) {
+				$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
+				$i =0; $j=-1;
+				foreach ($this->outputData as  $outputRecord) {
+					if($outputRecord->yearAndMonth == $tempYearAndMonth){
+						$j = $i;
+					}
+					$i++;
 				}
-				$i++;
+
+				if($j!=-1){
+					$output[$j]->soso = (int)$sosoDateRecord[2];	
+					break;	
+				} else{
+					$dataset = new RecordSet();
+					$dataset->yearAndMonth = $tempYearAndMonth;
+					$dataset->soso =(int) $sosoDateRecord[2];
+					$this->outputData[$tempYearAndMonth] = $dataset;
+				}
+
 			}
-			
-			if($j!=-1){
-				$output[$j]->bad = $badDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->bad = $badDateRecord[2];
-				$this->outputData[$tempYearAndMonth] = $dataset;
-			}
-						
 		}
+		if(!is_null($badDataset)){
+			foreach ($badDataset as $badDateRecord) {
+				$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
+				$i =0; $j=-1;
+				foreach ($this->outputData as  $outputRecord) {
+					if($outputRecord->yearAndMonth == $tempYearAndMonth){
+						$j = $i;
+					}
+					$i++;
+				}
 
-		
+				if($j!=-1){
+					$output[$j]->bad =(int) $badDateRecord[2];	
+					break;	
+				} else{
+					$dataset = new RecordSet();
+					$dataset->yearAndMonth = $tempYearAndMonth;
+					$dataset->bad =(int) $badDateRecord[2];
+					$this->outputData[$tempYearAndMonth] = $dataset;
+				}
 
-		return $this->generateData();
+			}
+		}
+		$out = array( );
+		foreach ($this->outputData as $key => $value) {
+			$out[]= $value->yearAndMonth;
+		}
+		$happyOutput = array();
+		$goodOutput = array();
+		$sosoOutput = array();
+		$badOutput = array();
+
+		foreach ($this->outputData as $key => $value) {
+			$happyOutput[]= $value->happy;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$goodOutput[]= $value->good;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$sosoOutput[]= $value->soso;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$badOutput[]= $value->bad;
+		}
+		$allOutput[]=array("name" => "Happy", "data" => $happyOutput );
+		$allOutput[]=array("name" => "Good", "data" => $goodOutput );
+		$allOutput[]=array("name" => "Soso", "data" => $sosoOutput );
+		$allOutput[]=array("name" => "Bad", "data" => $badOutput );
+
+		$returnOutput =array();
+		$returnOutput["categories"]=$out;
+		$returnOutput["series"] = $allOutput;
+
+		//sort($this->outputData);
+		//print_r($returnOutput);
+		return json_encode($returnOutput);
+	}
+	public function getCategory(){
+		$out = array( );
+		foreach ($this->outputData as $key => $value) {
+			$out[]= $value[0]->yearAndMonth;
+		}
+		return json_encode($out);
+	}
+	public function getSeriesData(){
+		$allOutput = array( );
+		$happyOutput = array();
+		$goodOutput = array();
+		$sosoOutput = array();
+		$badOutput = array();
+
+		foreach ($this->outputData as $key => $value) {
+			$happyOutput[]= $value[0]->happy;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$goodOutput[]= $value[0]->good;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$sosoOutput[]= $value[0]->soso;
+		}
+		foreach ($this->outputData as $key => $value) {
+			$badOutput[]= $value[0]->bad;
+		}
+		$allOutput[]=array("name" => "Happy", "data" => array($happyOutput) );
+		$allOutput[]=array("name" => "Good", "data" => array($goodOutput) );
+		$allOutput[]=array("name" => "Soso", "data" => array($sosoOutput) );
+		$allOutput[]=array("name" => "Bad", "data" => array($badOutput) );
+
+		return json_encode($allOutput);
 	}
 	public  function createTodayData(){
 		$happyDataSet = $this->getHappyRecordsToday();
@@ -244,99 +324,19 @@ private function countingTodayData($rate){
 		//echo " <br/>";
 
 		
-				$happyDataSet = $this->getHappyRecordsAll();
-				$goodDataset = $this->getGoodRecordsAll();
-				$sosoDataset = $this->getSosoRecordsAll();
-				$badDataset = $this->getBadRecordsAll();
+		$happyDataSet = $this->getHappyRecordsAll();
+		$goodDataset = $this->getGoodRecordsAll();
+		$sosoDataset = $this->getSosoRecordsAll();
+		$badDataset = $this->getBadRecordsAll();
 		
-		//echo "<br/> happy:";
-		//print_r($happyDataSet)."<br/>";
-		if(count($happyDataSet) != 0){
-			
-		foreach ($happyDataSet as $key => $value) {
-			$dataset = new RecordSet();
-			//echo $dataset->happy;
-			$keyValue =$value[0].'/'.$value[1];
-			//echo $keyValue;
-			$dataset->yearAndMonth = $keyValue;
-			$dataset->happy = $value[2];
-			$output[$keyValue] = $dataset;
-			//print_r($output);
-			# code...
-		}
-		}
-		if(count($goodDataset)){
-		foreach ($goodDataset as $goodDateRecord) {
-			$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $goodDateRecord[0]){
-					$j = $i;
-				}
-				$i++;
-			}
-			
-			if($j!=-1){
-				$output[$j]->good = $goodDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->good = $goodDateRecord[2];
-				$output[$tempYearAndMonth] = $dataset;
-			}
-						
-		}
-	}
-if(count($sosoDataset)){
-		foreach ($sosoDataset as $sosoDateRecord) {
-			$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $sosoDateRecord[0]){
-					$j = $i;
-				}
-				$i++;
-			}
-			
-			if($j!=-1){
-				$output[$j]->soso = $sosoDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->soso = $sosoDateRecord[2];
-				$output[$tempYearAndMonth] = $dataset;
-			}
-						
-		}
-}
-if(count($badDataset)){
-		foreach ($badDataset as $badDateRecord) {
-			$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
-			$i =0; $j=-1;
-			foreach ($output as  $outputRecord) {
-				if($outputRecord->yearAndMonth == $badDateRecord[0]){
-					$j = $i;
-				}
-				$i++;
-			}
-			
-			if($j!=-1){
-				$output[$j]->bad = $badDateRecord[2];	
-				break;	
-			} else{
-				$dataset = new RecordSet();
-				$dataset->yearAndMonth = $tempYearAndMonth;
-				$dataset->bad = $badDateRecord[2];
-				$output[$tempYearAndMonth] = $dataset;
-			}
-						
-		}
-}
+		$output= array(); 
+		$output[]= array("name" => "Happy", "data" => array($happyDataSet) );
+		$output[] = array("name" => "Good", "data" => array($goodDataset));
+		$output[] =  array("name" => "Soso", "data" => array($sosoDataset ));
+		$output[] =  array("name" => "Bad", "data" => array($badDataset ));
+		
 
-
-		return $this->generateData($output);
+		return json_encode($output);
 		
 	}
 
@@ -414,142 +414,52 @@ if(count($badDataset)){
 
 	public function generateData($outputData)
 	{
- 		$count = count($outputData);
+		$count = count($outputData);
  		//print_r($outputData);
  		//echo $count;
  		/*if ($count) {
  			# code...
  			echo $count;
  		}*/
+ 		/*
+ 		$output_array= array();
+ 		$output_array[]= array('chart' => array('type'=>'column') );
+ 		$output_array[]= array('title' => array('text'=>'Stacked column chart') );
+ 		$categories= array();
+ 		foreach ($outputData as $key => $value) {
+ 			$categories[]= $value->yearAndMonth;
+ 		}
+ 		$output_array[]= array('xAxis' => array('categories'=>$categories) );
+ 		$output_array[]= array('yAxis' => array('min'=>0, 'title'=>"Level of Student satisfaction") );
+ 		$output_array[]= array('tooltip' => array('pointFormat'=>'<span style=\"color:{series.color}\">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>', 'shared'=>"true") );
+ 		$output_array[]= array('plotOptions' => array('column'=>array('stacking'=>'percent')) );
+ 		$hapypickData = array();
+ 		foreach ($outputData as $key => $value) {
+ 			$hapypickData[]= $value->happy;
+ 			# code...
+ 		}
+ 		$goodpickData = array();
+ 		foreach ($outputData as $key => $value) {
+ 			$goodpickData[]= $value->good;
+ 			# code...
+ 		}
+ 		$sosopickData = array();
+ 		foreach ($outputData as $key => $value) {
+ 			$sosopickData[]= $value->soso;
+ 			# code...
+ 		}
+ 		$badpickData = array();
+ 		foreach ($outputData as $key => $value) {
+ 			$badpickData[]= $value->bad;
+ 			# code...
+ 		}
 
-		$output= "
-    chart: {
-        type: 'column'
-    },
-    title: {
-        text: 'Stacked column chart'
-    },
-    xAxis: {
-        categories: [";
-        $i=0;
-        $count = count($outputData);
-        foreach ($outputData as $key => $value) {
-        	$temp ="\"";
-        	if ($i< $count-1) {
-        		$temp = "\",";
-        	} 
-        	 $output.="\"".$key.$temp;
-        	 $i++;
-        
-        
-        }
-        
-        
-    
-        $output.=
-        "]
-    },
-    yAxis: {
-        min: 0,
-        title: {
-            text: 'Level of Student satisfaction'
-        }
-    },
-    tooltip: {
-        pointFormat: '<span style=\"color:{series.color}\">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>',
-        shared: true
-    },
-    plotOptions: {
-        column: {
-            stacking: 'percent'
-        }
-    },
-    series: [
-    {   name: 'Happy',
-        data: [";
-        
-       $i=0;
-       
-        foreach ($outputData as $key => $value) {
-        	$temp ="";
-        	if ($i< $count-1) {
-        		$temp = ",";
-        	} 
-        	 $output.=$value->happy.$temp;
-        
-        $i++;
-        }
-
-        $output.=
-        "]
-    }, 
-    {
-        name: 'Good',
-        data: [";
-        
-          $i=0;
-       
-        foreach ($outputData as $key => $value) {
-        	$temp ="";
-        	if ($i< $count-1) {
-        		$temp = ",";
-        	} 
-        	 $output.=$value->good.$temp;
-        $i++;
-        
-        }
-
-        
-      
-		$output.=
-        "]
-    },
-    {
-        name: 'Soso',
-        data: [";
-         
-     	 $i=0;
-       
-        foreach ($outputData as $key => $value) {
-        	$temp ="";
-        	if ($i< $count-1) {
-        		$temp = ",";
-        	} 
-        	 $output.=$value->soso.$temp;
-        $i++;
-        
-        }
-
-        
-      
-		$output.=
-        "]
-    },  
-    {
-        name: 'Bad',
-        data: [";
-         
-        $i=0;
-       
-        foreach ($outputData as $key => $value) {
-        	$temp ="";
-        	if ($i< $count-1) {
-        		$temp = ",";
-        	} 
-        	 $output.=$value->bad.$temp;
-        
-        $i++;
-        }
-
-        
-        $output.=
-        "
-
-        ]
-    }]
-});" ;
-		return $output;
-	}
+ 		$output_array[]= array('series' => array('name'=>'Happy', 'data'=>$hapypickData),array('name'=>'Good', 'data'=>$goodpickData),
+ 			array('name'=>'Soso', 'data'=>$sosopickData),
+ 			array('name'=>'Bad', 'data'=>$badpickData));*/
+ 		 
+ return $output_array;
+}
 }
 
 ?>
