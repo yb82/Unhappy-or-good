@@ -1,22 +1,4 @@
-function visitorData (data) {
-   $('#container1').highcharts({
-    chart: {
-        type: 'column'
-    },
-    title: {
-        text: 'Average Visitors'
-    },
-    xAxis: {
-        categories: ["Today"]
-    },
-    yAxis: {
-        title: {
-            text: 'Number of visitors'
-        }
-    },
-    series: data,
-  });
-}
+
 $(document).ready(function() {
     $('#from').datepick({
     
@@ -63,7 +45,7 @@ function getRangeData(fromto){
           alert( "Error" );
         } 
         else {
-          $("#ex").append(data);
+        
           //visitorData(data);
          var myObj = JSON.parse(data);
          var categories =myObj["categories"];
@@ -135,7 +117,7 @@ function getAllData(){
          
            
           //visitorData(data);
-          $("#ex").append(data);
+         
           var myObj = JSON.parse(data);
           var seriesData =[];
           for (var i =0; myObj.length > i ; i++) {
@@ -177,7 +159,7 @@ function getTodayData(){
         } 
         else {
           
-          $("#ex").append(data);
+         // $("#ex").append(data);
           var myObj = JSON.parse(data);
           var seriesData =[];
           for (var i =0; myObj.length > i ; i++) {

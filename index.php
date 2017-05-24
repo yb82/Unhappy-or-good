@@ -1,4 +1,3 @@
 <?php
 
-//include "view/mainview.php";
-include "view/statistics.php";
+include "view/mainview.php";

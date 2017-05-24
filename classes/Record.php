@@ -10,11 +10,36 @@ class Record{
 	private $outputData;
 
 	private $db_connection = null;
-	public function __construct(){
-		$now = date("d-m-Y");
-		$now = $this->dbToDate($now);
+	public $login;
+	public function __construct() {
+		if (! isset ( $_SESSION )) {
+			session_start ();
+			$now = date("d-m-Y");
+			$now = $this->dbToDate($now);
+		}
+		
+		
+		
+		if (! empty ( $_SESSION ['user_id'] )) {
+			$this->user_id = $_SESSION ['user_id'];
+			$result = array ();
+			$result = $this->get_user_data ( $this->user_id );
+			// foreach ($result as $key => $value)
+			$this->user_first_name = $result ['user_first_name'];
+			$this->user_last_name = $result ['user_last_name'];
+			$this->user_email = $result ['user_email'];
+			$this->user_agency = $result ['user_agency_name'];
+			$this->user_contact = $result ['user_contact_number'];
+			$this->user_role = $result ['user_account_type'];
+			$this->login = true;
+		} else
+			$this->login = false;
+		//$this->coutries = $this->selectCountryAll ();
+		//$this->rooms = $this->selectRoomAll ();
+		//$this->airports = $this->selectAirportAll ();
+		//$this->status= $this->selectStatusAll();
 	}
-
+	
 
 	public function addRecord($rate){
 		
@@ -50,8 +75,8 @@ class Record{
 				AND  `timestamp` <=  :to
 				GROUP BY YEAR( TIMESTAMP ) , MONTH( TIMESTAMP ) 
 				');
-			//echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
-			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
+			////echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
+			////echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
 
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 			$query->bindValue ( ':from', $this->dateToDB( $from)." 00:00:00", PDO::PARAM_STR );
@@ -78,8 +103,8 @@ class Record{
 				AND  DATE(`timestamp`) = CURDATE()
 				
 				');
-			//echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
-			//echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
+			////echo $from." ". $this->dateToDB( $from)." 00:00:00"."<br/>"; 
+			////echo $to." ".$this->dateToDB($to)." 23:59:59"."<br/>"; 
 
 			$query->bindValue ( ':rate', $rate, PDO::PARAM_INT );
 
@@ -117,31 +142,15 @@ class Record{
 	}
 	public function createRangeData($from, $to)
 	{
-		//echo $from." from to <br/>".$to;
-		$output =array();
-		$happyDataSet;
-		$goodDataset;
-		$sosoDataset;
-		$badDataset;
+		////echo $from." from to <br/>".$to;
+		//$output =array();
 		
-
 		$happyDataSet = $this->getHappyRecords($from,$to);
 		$goodDataset = $this->getGoodRecords($from,$to);
 		$sosoDataset = $this->getSosoRecords($from,$to);
 		$badDataset = $this->getBadRecords($from,$to);
 		
-		//echo "<br/>happy".$from." ".$to."<br/>" ;
-		//print_r($happyDataSet);
-		echo "<br/>";
-
-		print_r($happyDataSet);
-		echo "<br/>";
-		print_r($goodDataset);
-		echo "<br/>";
-		print_r($sosoDataset);
-		echo "<br/>";
-		print_r($badDataset);
-
+		
 		if(!is_null($happyDataSet)){
 
 
@@ -149,31 +158,40 @@ class Record{
 
 			foreach ($happyDataSet as $key => $value) {
 				$dataset = new RecordSet();
-				//echo $dataset->happy;
+				////echo $dataset->happy;
 
 				$keyValue =$value[0].'/'.$value[1];
-				//echo "<br/>".$key."  ".$keyValue."<br/>";
+				////echo "<br/>".$key."  ".$keyValue."<br/>";
 				$dataset->yearAndMonth = $keyValue;
-				//echo "<br/>".$value[2]."<br/>";
+				////echo "<br/>".$value[2]."<br/>";
 				$dataset->happy = (int)$value[2];
 				$this->outputData[$keyValue] = $dataset;
 			# code...
 			}
+			//echo "<br/>";
+			//echo "Happy<br/>";
+			//print_r($this->outputData);
 		}
+		//echo "Good1<br/>";
 		if(!is_null($goodDataset)){
+			//echo "Good2<br/>";
 			foreach ($goodDataset as $goodDateRecord) {
 				$tempYearAndMonth = $goodDateRecord[0].'/'.$goodDateRecord[1];
-				$i =0; $j=-1;
+				 $j=-1;
+				//echo "Good1<br/>";
 				foreach ($this->outputData as  $outputRecord) {
+					//echo "<br/>Good2".$outputRecord->yearAndMonth;
+					//echo "<br/>Good3".$tempYearAndMonth;
 					if($outputRecord->yearAndMonth == $tempYearAndMonth){
-						$j = $i;
+						$j = $tempYearAndMonth;
 					}
+
 					$i++;
 				}
-
+				//echo "<br/>j ".$j;
 				if($j!=-1){
-					$output[$j]->good = (int)$goodDateRecord[2];	
-					break;	
+					$this->outputData[$j]->good = (int)$goodDateRecord[2];	
+					
 				} else{
 					$dataset = new RecordSet();
 					$dataset->yearAndMonth = $tempYearAndMonth;
@@ -182,25 +200,34 @@ class Record{
 				}
 
 			}
+			//echo "<br/>";
+			//echo "Good<br/>";
+			//print_r($this->outputData);
 		}
 		if(!is_null($sosoDataset)){
+			//	echo "Good2<br/>";
+			//	echo count($sosoDataset)."<br/>";
 			foreach ($sosoDataset as $sosoDateRecord) {
 				$tempYearAndMonth = $sosoDateRecord[0].'/'.$sosoDateRecord[1];
-				$i =0; $j=-1;
+				 $j=-1;
+				//echo "soso1<br/>";
 				foreach ($this->outputData as  $outputRecord) {
+				//	echo "<br/>soso2 ".$outputRecord->yearAndMonth;
+				//	echo "<br/>soso3 ".$tempYearAndMonth;
 					if($outputRecord->yearAndMonth == $tempYearAndMonth){
-						$j = $i;
+						$j = $tempYearAndMonth;
 					}
+
 					$i++;
 				}
-
+				//echo "<br/>j ".$j;
 				if($j!=-1){
-					$output[$j]->soso = (int)$sosoDateRecord[2];	
-					break;	
+					$this->outputData[$j]->soso = (int)$sosoDateRecord[2];	
+					
 				} else{
 					$dataset = new RecordSet();
 					$dataset->yearAndMonth = $tempYearAndMonth;
-					$dataset->soso =(int) $sosoDateRecord[2];
+					$dataset->soso = (int)$sosoDateRecord[2];
 					$this->outputData[$tempYearAndMonth] = $dataset;
 				}
 
@@ -209,25 +236,32 @@ class Record{
 		if(!is_null($badDataset)){
 			foreach ($badDataset as $badDateRecord) {
 				$tempYearAndMonth = $badDateRecord[0].'/'.$badDateRecord[1];
-				$i =0; $j=-1;
+				 $j=-1;
+				//echo "bad1<br/>";
 				foreach ($this->outputData as  $outputRecord) {
+					//echo "<br/>bad2".$outputRecord->yearAndMonth;
+					//echo "<br/>bad3".$tempYearAndMonth;
 					if($outputRecord->yearAndMonth == $tempYearAndMonth){
-						$j = $i;
+						$j = $tempYearAndMonth;
 					}
+
 					$i++;
 				}
-
+				//echo "<br/>j ".$j;
 				if($j!=-1){
-					$output[$j]->bad =(int) $badDateRecord[2];	
-					break;	
+					$this->outputData[$j]->bad = (int)$badDateRecord[2];	
+					
 				} else{
 					$dataset = new RecordSet();
 					$dataset->yearAndMonth = $tempYearAndMonth;
-					$dataset->bad =(int) $badDateRecord[2];
+					$dataset->bad = (int)$badDateRecord[2];
 					$this->outputData[$tempYearAndMonth] = $dataset;
 				}
 
 			}
+			//echo "<br/>";
+			//echo "Bad<br/>";
+			//print_r($this->outputData);
 		}
 		$out = array( );
 		foreach ($this->outputData as $key => $value) {
@@ -260,7 +294,7 @@ class Record{
 		$returnOutput["series"] = $allOutput;
 
 		//sort($this->outputData);
-		//print_r($returnOutput);
+		////print_r($returnOutput);
 		return json_encode($returnOutput);
 	}
 	public function getCategory(){
@@ -315,13 +349,13 @@ class Record{
 
 	public  function createAllData()
 	{
-		//echo $tag." tag <br/>";
+		////echo $tag." tag <br/>";
 		$output=array();
 		$happyDataSet;
 		$goodDataset;
 		$sosoDataset;
 		$badDataset;
-		//echo " <br/>";
+		////echo " <br/>";
 
 		
 		$happyDataSet = $this->getHappyRecordsAll();
@@ -412,54 +446,6 @@ class Record{
 		return $date;
 	}
 
-	public function generateData($outputData)
-	{
-		$count = count($outputData);
- 		//print_r($outputData);
- 		//echo $count;
- 		/*if ($count) {
- 			# code...
- 			echo $count;
- 		}*/
- 		/*
- 		$output_array= array();
- 		$output_array[]= array('chart' => array('type'=>'column') );
- 		$output_array[]= array('title' => array('text'=>'Stacked column chart') );
- 		$categories= array();
- 		foreach ($outputData as $key => $value) {
- 			$categories[]= $value->yearAndMonth;
- 		}
- 		$output_array[]= array('xAxis' => array('categories'=>$categories) );
- 		$output_array[]= array('yAxis' => array('min'=>0, 'title'=>"Level of Student satisfaction") );
- 		$output_array[]= array('tooltip' => array('pointFormat'=>'<span style=\"color:{series.color}\">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>', 'shared'=>"true") );
- 		$output_array[]= array('plotOptions' => array('column'=>array('stacking'=>'percent')) );
- 		$hapypickData = array();
- 		foreach ($outputData as $key => $value) {
- 			$hapypickData[]= $value->happy;
- 			# code...
- 		}
- 		$goodpickData = array();
- 		foreach ($outputData as $key => $value) {
- 			$goodpickData[]= $value->good;
- 			# code...
- 		}
- 		$sosopickData = array();
- 		foreach ($outputData as $key => $value) {
- 			$sosopickData[]= $value->soso;
- 			# code...
- 		}
- 		$badpickData = array();
- 		foreach ($outputData as $key => $value) {
- 			$badpickData[]= $value->bad;
- 			# code...
- 		}
-
- 		$output_array[]= array('series' => array('name'=>'Happy', 'data'=>$hapypickData),array('name'=>'Good', 'data'=>$goodpickData),
- 			array('name'=>'Soso', 'data'=>$sosopickData),
- 			array('name'=>'Bad', 'data'=>$badpickData));*/
- 		 
- return $output_array;
-}
 }
 
 ?>

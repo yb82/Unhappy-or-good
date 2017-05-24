@@ -1,6 +1,10 @@
 <?php
 require_once ("./classes/Record.php");
 
+define("HAPPY",4);
+define("GOOD",3);
+define("SOSO",2);
+define("ANGRY",1);
 error_reporting(0);
 $record = new Record();
 if(isset($_POST["date"])){
